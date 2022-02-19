@@ -19,6 +19,12 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, error = FALSE,
 ```{r}
 library(tidyverse)
 library(lubridate)
+library(tidyverse)
+# library(emayili)
+library(jsonlite)
+library(httr)
+library(lubridate)
+library(curl)
 ```
 
 
@@ -45,11 +51,6 @@ cherry <- read.csv("data/washingtondc.csv") %>%
   bind_rows(read.csv("data/kyoto.csv")) %>%
   mutate(bloom_date = ymd(bloom_date))
   
-```
-
-
-```{r}
-read_csv("data/kyoto.csv")
 ```
 
 
@@ -98,7 +99,59 @@ cherry %>%
 
 # let's do a simple causal diagram and see if we can find other data to generate a prediction model
 ```{r}
-library(d)
+library(dagitty)
+library(ggdag)
+
+dag <- dagify(
+  bloom_doy ~ cherry_type + cold_more_than_30d + location + altitude,
+  cold_more_than_30d ~ location + altitude,
+  cherry_type ~ location + altitude,
+  exposure = "cold_more_than_30d",
+  outcome = "bloom_doy"
+  
+)
+
+
+set.seed(11)
+ggdag_status(dag, text_col = "black") +
+  theme_dag()
+
+paths(dag)
+ggdag_dseparated(dag, controlling_for = c("location","altitude","cherry_type","cold_more_than_30d"))
+# looks like have to control for all of the above to d-separate
+
+```
+
+
+# let's see if we can find above data from available dataset provided
+```{r}
+read_csv("data/meteoswiss.csv") %>% view() #has other location in switzerland's bloom doy
+read_csv("data/USA-NPN_individual_phenometrics_data.csv") %>% view() # interestingly US data has different species of cherry blossom and different state too with tmax of each season and percipitation etc, but no info on our variables in causal diagram (30d cold)
+# let's do EDA on the above US data
+df <- read_csv("data/USA-NPN_individual_phenometrics_data.csv") 
+
+library(geofacet)
+df %>%
+  ggplot(.,aes(x=First_Yes_Year,y=First_Yes_DOY,color=Species)) +
+  geom_point() +
+  geom_line() +
+  facet_geo(~State) # hmmm... looks like species and state may be factor to bloom_doy, difficult to say with limited data, but from sparse data, species does play a role
+
+
+```
+
+
+
+# can we get weather data?
+```{r}
+library(tidyverse)
+# library(emayili)
+library(jsonlite)
+library(httr)
+library(lubridate)
+library(curl)
+
+base <- "https://api.openweathermap.org/data/2.5/onecall?lat=41.0989&lon=-81.6446&exclude=minutely,daily&appid=642ce95cc88ae923ab2cbe05ca8f73c1&units=imperial"
 ```
 
 

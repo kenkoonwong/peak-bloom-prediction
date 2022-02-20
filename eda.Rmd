@@ -19,12 +19,10 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, error = FALSE,
 ```{r}
 library(tidyverse)
 library(lubridate)
-library(tidyverse)
-# library(emayili)
 library(jsonlite)
 library(httr)
-library(lubridate)
 library(curl)
+library(geofacet)
 ```
 
 
@@ -130,7 +128,6 @@ read_csv("data/USA-NPN_individual_phenometrics_data.csv") %>% view() # interesti
 # let's do EDA on the above US data
 df <- read_csv("data/USA-NPN_individual_phenometrics_data.csv") 
 
-library(geofacet)
 df %>%
   ggplot(.,aes(x=First_Yes_Year,y=First_Yes_DOY,color=Species)) +
   geom_point() +
@@ -151,7 +148,10 @@ library(httr)
 library(lubridate)
 library(curl)
 
-base <- "https://api.openweathermap.org/data/2.5/onecall?lat=41.0989&lon=-81.6446&exclude=minutely,daily&appid=642ce95cc88ae923ab2cbe05ca8f73c1&units=imperial"
+
+base <- paste0("https://api.openweathermap.org/data/2.5/onecall?lat=41.0989&lon=-81.6446&exclude=minutely,daily&appid=",Sys.getenv("OPENWEATHER"),"&units=imperial")
+
+
 ```
 
 

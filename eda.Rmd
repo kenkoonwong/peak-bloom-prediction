@@ -26,6 +26,7 @@ library(geofacet)
 library(dagitty)
 library(ggdag)
 library(gridExtra)
+library(broom)
 ```
 
 
@@ -179,7 +180,7 @@ grid.arrange(doy_hist,time_series,time_series_all,dag_plot)
 
 load("data/weather_clean.rda")
 
-weather_clean %>%
+winter_add <- weather_clean %>%
   distinct(location,mdy,mintemp) %>%
   mutate(year = year(mdy),
          month = month(mdy)) %>%
@@ -193,8 +194,16 @@ weather_clean %>%
   ),
   adjust_year = case_when(
     month %in% c(10:12) ~ year + 1,
-    month %in% c(4:5) ~ year
-  )) -> winter_add
+    month %in% c(1:2) ~ year
+  )) 
+
+winter_add %>%
+  ggplot(.,aes(x=mintemp, fill=location)) +
+  geom_histogram(position = "dodge") +
+  geom_density() +
+  facet_wrap(facets = "adjust_year", ncol = 10, nrow = 10) +
+  theme_bw() +
+  scale_fill_manual(values=c("black", "red", "green"))
 
 
 ```
@@ -203,12 +212,35 @@ weather_clean %>%
 ```{r}
 winter_add2 <- winter_add %>%
   mutate(year = adjust_year) %>%
-  select(location, mintemp, year,beginwintermonth)
+  select(location, mintemp, year,beginwintermonth) 
 
-cherry %>%
-  filter(year >= 1980) %>%
-  left_join(winter_add2, by = c("year","location")) %>% head()
+c_df <- cherry %>%
+  filter(year > 1980) %>%
+  left_join(winter_add2, by = c("year","location")) %>%
+  group_by(location,year) %>%
+  mutate(mean_temp = mean(mintemp)) %>%
+  select(location,bloom_doy,year,alt,mean_temp) %>%
+  distinct_all()
 
+
+
+```
+
+# simple linear regression with mean min_temp from October thru Feb
+```{r}
+
+model <- lm(bloom_doy ~ location + mean_temp, data = c_df)
+
+summary(model)
+sqrt(mean(model$residuals^2))
+
+# interesting, using mean temperature, the rsq is 0.16, rmse is 7.06. not as good as article ping found https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0027439 where rsq is 0.57-0.76, with rmse of 5.6-6.6days
+
+ 
+model %>% summary()
+model %>% tidy() 
+
+paste0("RMSE: ",sqrt(mean(model$residuals^2)))
 
 ```
 

@@ -209,7 +209,6 @@ cherry %>%
   filter(year >= 1980) %>%
   left_join(winter_add2, by = c("year","location")) %>% head()
 
-testing
 
 ```
 

@@ -153,7 +153,7 @@ grid.arrange(doy_hist,time_series,time_series_all,dag_plot)
 
 
 
-# can we get weather data?
+# weather data and distribution of min_temp faceted by year and grouped by location
 ```{r}
 
 load("data/weather_clean.rda")

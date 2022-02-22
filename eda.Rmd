@@ -179,8 +179,38 @@ grid.arrange(doy_hist,time_series,time_series_all,dag_plot)
 
 load("data/weather_clean.rda")
 
+weather_clean %>%
+  distinct(location,mdy,mintemp) %>%
+  mutate(year = year(mdy),
+         month = month(mdy)) %>%
+  filter(!month %in% c(3:9)) %>%
+  mutate(beginwintermonth = case_when(
+    month == 10 ~ 1,
+    month == 11 ~ 2,
+    month == 12 ~ 3,
+    month == 1 ~ 4,
+    month == 2 ~ 5
+  ),
+  adjust_year = case_when(
+    month %in% c(10:12) ~ year + 1,
+    month %in% c(4:5) ~ year
+  )) -> winter_add
+
 
 ```
 
+# combine weather_add to cherry
+```{r}
+winter_add2 <- winter_add %>%
+  mutate(year = adjust_year) %>%
+  select(location, mintemp, year,beginwintermonth)
+
+cherry %>%
+  filter(year >= 1980) %>%
+  left_join(winter_add2, by = c("year","location")) %>% head()
+
+testing
+
+```
 
 

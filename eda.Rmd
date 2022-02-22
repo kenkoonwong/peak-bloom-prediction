@@ -155,28 +155,6 @@ grid.arrange(doy_hist,time_series,time_series_all,dag_plot)
 
 # can we get weather data?
 ```{r}
-# api <- Sys.getenv("OPENWEATHER")
-# lat <- cherry$lat %>% unique()
-# lon <- cherry$long %>% unique()
-# start <- mdy_hms("10-1-1990 00:00:00") %>% as.numeric()
-# end <- mdy_hms("10-1-2020 00:00:00") %>% as.numeric()
-# 
-# his <- paste0("http://history.openweathermap.org/data/2.5/history/city?lat=",lat,"&lon=",lon, "&type=daily&start=",start,"&end=",end,"&appid=",api)
-# 
-
-# weather <- fread("data/ed651b7dc6bafceebb59d31406244edf.csv") # going to use data.table to read this since it is faster than dplyr
-
-
-# weather_clean <- weather %>%
-#   mutate(date = ymd_hms(dt_iso)) %>%
-#   select(date, location=city_name, temp_min) %>%
-#   mutate(location = case_when(
-#     location == "Washington" ~ "washingtondc",
-#     TRUE ~ tolower(location)
-#   ),
-#   mdy=date(date)) %>%
-#   group_by(mdy,location) %>%
-#   mutate(mintemp = min(temp_min))
 
 load("data/weather_clean.rda")
 

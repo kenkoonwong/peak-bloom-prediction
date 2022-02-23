@@ -222,4 +222,28 @@ paste0("RMSE: ",sqrt(mean(model$residuals^2)))
 
 ```
 
+# explore how many days from oct-feb min_temp <= 41
+```{r}
+
+
+meanbelow41 <- winter_add2 %>%
+  ungroup() %>%
+  mutate(below41 = case_when(
+    mintemp <= 41 ~ 1,
+    TRUE ~ 0
+  )) %>%
+  group_by(location, year) %>% 
+  mutate(meanbelow41 = mean(below41)) %>% 
+    ggplot(.,aes(x=location,y=meanbelow41,color=location)) +
+    geom_point()
+
+bloom_doy <- cherry %>%
+  ggplot(.,aes(x=location,y=bloom_doy,color=location)) +
+  geom_point()
+
+grid.arrange(meanbelow41, bloom_doy, nrow = 1)
+# looks like if we're purely looking at cumulative days w min_temp <= 41, we have well above 30, if first article is accurate, we will have to create a function to check consecutive 30d chill
+  
+  
+```
 

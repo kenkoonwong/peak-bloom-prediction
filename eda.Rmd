@@ -244,6 +244,24 @@ bloom_doy <- cherry %>%
 grid.arrange(meanbelow41, bloom_doy, nrow = 1)
 # looks like if we're purely looking at cumulative days w min_temp <= 41, we have well above 30, if first article is accurate, we will have to create a function to check consecutive 30d chill
   
+winter_add2 %>%
+  filter(location == "washingtondc") -> df
   
+morecold <- 0
+dff <- tibble()
+year <- df$year %>% unique() 
+
+consec <- function() {
+  for (i in year) {
+    d <- df %>% 
+      filter(year == i) 
+    nj <- nrow(d)
+    for (j in c(1:nj)) {
+      d[j] 
+    }
+      
+  }
+}
+
 ```
 

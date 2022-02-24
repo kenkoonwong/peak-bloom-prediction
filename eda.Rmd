@@ -155,13 +155,28 @@ grid.arrange(doy_hist,time_series,time_series_all,dag_plot)
 
 # weather data and distribution of min_temp faceted by year and grouped by location
 ```{r}
+weather <- read_csv("https://history.openweathermap.org/storage/ed651b7dc6bafceebb59d31406244edf.csv")
+
+library(data.table)
+weather <- fread("C:/Users/dap3a/Downloads/weather.csv")
+
+weather_clean <- weather %>%
+  select(dt_iso,city_name,temp_min,temp_max,pressure,humidity) %>%
+  mutate(mdy = ymd_hms(dt_iso),
+         location = city_name) %>% 
+  select(-dt_iso,-city_name)
 
 load("data/weather_clean.rda")
 
 winter_add <- weather_clean %>%
-  distinct(location,mdy,mintemp) %>%
+  # distinct(location,mdy,temp_min) %>%
   mutate(year = year(mdy),
-         month = month(mdy)) %>%
+         month = month(mdy),
+         mdy = date(mdy),
+         adjust_year = case_when(
+           month(mdy) %in% c(10:12) ~ year + 1,
+           month(mdy) %in% c(1:2) ~ year
+         )) %>%
   filter(!month %in% c(3:9)) %>%
   mutate(beginwintermonth = case_when(
     month == 10 ~ 1,
@@ -169,11 +184,28 @@ winter_add <- weather_clean %>%
     month == 12 ~ 3,
     month == 1 ~ 4,
     month == 2 ~ 5
-  ),
-  adjust_year = case_when(
+  )) %>%
+  group_by(mdy) %>%
+  mutate(mintemp = min(temp_min),
+         maxtemp = max(temp_max),
+         minhum = min(humidity),
+         maxhum = max(humidity),
+         minpres = min(pressure),
+         maxpres = max(pressure)) %>%
+  distinct(mdy, month, location, year, mintemp, maxtemp, minhum, maxhum,minpres,maxpres) %>%
+  ungroup() %>%
+  mutate(adjust_year = case_when(
     month %in% c(10:12) ~ year + 1,
-    month %in% c(1:2) ~ year
-  )) 
+    TRUE ~ year
+  ))
+
+#######
+winter_add %>%
+  select()
+  ggplot(.,aes(x=mdy,y=))
+  
+
+
 
 winter_add %>%
   ggplot(.,aes(x=mintemp, fill=location)) +
@@ -235,33 +267,64 @@ meanbelow41 <- winter_add2 %>%
   group_by(location, year) %>% 
   mutate(meanbelow41 = mean(below41)) %>% 
     ggplot(.,aes(x=location,y=meanbelow41,color=location)) +
-    geom_point()
+    geom_point(alpha=0.2)
 
 bloom_doy <- cherry %>%
   ggplot(.,aes(x=location,y=bloom_doy,color=location)) +
-  geom_point()
+  geom_point(alpha=0.2) +
+  geom_violin(alpha=0.2)
 
 grid.arrange(meanbelow41, bloom_doy, nrow = 1)
 # looks like if we're purely looking at cumulative days w min_temp <= 41, we have well above 30, if first article is accurate, we will have to create a function to check consecutive 30d chill
   
 winter_add2 %>%
-  filter(location == "washingtondc") -> df
+  filter(location == "liestal") -> df
   
 morecold <- 0
-dff <- tibble()
+dff <- tibble(year=as.numeric(),more_than_30d_cold=as.logical())
 year <- df$year %>% unique() 
 
-consec <- function() {
-  for (i in year) {
-    d <- df %>% 
-      filter(year == i) 
-    nj <- nrow(d)
-    for (j in c(1:nj)) {
-      d[j] 
-    }
-      
+for (i in year) {
+  d <- df %>% 
+    filter(year == i) 
+  for (j in c(1:nrow(d))) {
+    if (d$mintemp[j] <= 41) { morecold <- morecold + 1 }
+    if (d$mintemp[j] > 41) { morecold <- 0 }
+    if (morecold == 30) { 
+      dff <- dff %>% add_row(year=i,more_than_30d_cold=1 ) 
+      break } 
   }
+    
 }
+
+washdf <- dff
+kyotodf <- dff
+liesdf <- dff
+
+morecolddf <- bind_rows(washdf %>% mutate(location="washingtondc"),kyotodf %>% mutate(location="kyoto"),liesdf %>% mutate(location="liestal"))
+
+c_morecold_df <- cherry %>%
+  filter(year > 1980) %>%
+  left_join(morecolddf, by = c("year","location")) %>%
+  mutate(more_than_30d_cold = case_when(
+    is.na(more_than_30d_cold) ~ 0,
+    TRUE ~ more_than_30d_cold
+  )) %>%
+  left_join(winter_add2, by = c("location","year")) %>% 
+  group_by(location,year) %>%
+  mutate(mean_temp = mean(mintemp),
+         var_temp = var(mintemp)) %>%
+  select(location,bloom_doy,year,alt,mean_temp,var_temp,more_than_30d_cold) %>%
+  distinct_all()
+
+c_morecold_df %>%
+  ggplot(.,aes(x=more_than_30d_cold,fill=location)) +
+  geom_bar(position = "dodge")
+
+model2 <- lm(bloom_doy ~ more_than_30d_cold, c_morecold_df %>% filter(location=="kyoto"))
+
+model2 %>% summary()
+sqrt(mean(model2$residuals^2))
 
 ```
 
